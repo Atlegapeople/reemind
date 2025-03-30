@@ -1,10 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
 // DELETE handler
 export async function DELETE(
-  request: NextRequest,
+  request: Request,
   context: { params: { id: string } }
 ) {
   const { id } = context.params;
@@ -31,7 +31,7 @@ export async function DELETE(
 
 // PUT handler
 export async function PUT(
-  request: NextRequest,
+  request: Request,
   context: { params: { id: string } }
 ) {
   const { id } = context.params;
@@ -41,8 +41,6 @@ export async function PUT(
   }
 
   const body = await request.json();
-
-  // 🔥 Exclude _id to prevent issues during update
   const { _id, ...updateFields } = body;
 
   try {
