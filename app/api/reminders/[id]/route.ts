@@ -2,40 +2,47 @@ import { type NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-    const { id } = params;
-  
-    if (!ObjectId.isValid(id)) {
-      return NextResponse.json({ success: false, error: "Invalid ID" }, { status: 400 });
-    }
-  
-    try {
-      const client = await clientPromise;
-      const db = client.db("reemind");
-  
-      const result = await db.collection("reminders").deleteOne({ _id: new ObjectId(id) });
-  
-      return NextResponse.json({
-        success: result.deletedCount > 0,
-        deletedCount: result.deletedCount,
-      });
-    } catch (err) {
-      console.error("🔥 Error deleting reminder:", err);
-      return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
-    }
-  }
-  
-
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = params;
+// DELETE handler
+export async function DELETE(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
+  const { id } = context.params;
 
   if (!ObjectId.isValid(id)) {
     return NextResponse.json({ success: false, error: "Invalid ID" }, { status: 400 });
   }
 
-  const body = await req.json();
+  try {
+    const client = await clientPromise;
+    const db = client.db("reemind");
 
-  // 🔥 Remove `_id` to avoid trying to update it
+    const result = await db.collection("reminders").deleteOne({ _id: new ObjectId(id) });
+
+    return NextResponse.json({
+      success: result.deletedCount > 0,
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    console.error("🔥 Error deleting reminder:", err);
+    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+  }
+}
+
+// PUT handler
+export async function PUT(
+  request: NextRequest,
+  context: { params: { id: string } }
+) {
+  const { id } = context.params;
+
+  if (!ObjectId.isValid(id)) {
+    return NextResponse.json({ success: false, error: "Invalid ID" }, { status: 400 });
+  }
+
+  const body = await request.json();
+
+  // 🔥 Exclude _id to prevent issues during update
   const { _id, ...updateFields } = body;
 
   try {
