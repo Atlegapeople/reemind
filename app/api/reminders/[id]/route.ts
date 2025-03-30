@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import clientPromise from "@/lib/mongodb";
 
-// DELETE handler
+// DELETE
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Record<string, string> }
 ) {
   const { id } = context.params;
 
@@ -29,10 +29,10 @@ export async function DELETE(
   }
 }
 
-// PUT handler
+// PUT
 export async function PUT(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Record<string, string> }
 ) {
   const { id } = context.params;
 
