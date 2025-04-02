@@ -70,7 +70,7 @@ const PROMISES = [
   {
     icon: <LucideHeartHandshake className="h-8 w-8 text-[#FFCB77]" />,
     title: "Built for Care",
-    text: "Reemind helps you stay connected — simply, beautifully, and meaningfully.",
+    text: "Reemind helps you stay connected - simply, beautifully, and meaningfully.",
     gradient: "from-[#FFCB77]/5 to-[#FFCB77]/10",
     accent: "#FFCB77"
   },
@@ -179,7 +179,7 @@ export default function HomePage() {
 
     try {
       // Log the data being sent
-      console.log("Sending data:", formData);
+      console.log("📤 Sending data:", formData);
 
       const res = await fetch("/api/reminders", {
         method: "POST",
@@ -191,17 +191,22 @@ export default function HomePage() {
       });
 
       // Log the response status
-      console.log("Response status:", res.status);
+      console.log("📥 Response status:", res.status);
 
       // Try to parse the response as JSON
       let data;
+      const textResponse = await res.text();
+      console.log("📄 Raw response:", textResponse);
+
       try {
-        const textResponse = await res.text();
-        console.log("Raw response:", textResponse);
         data = JSON.parse(textResponse);
       } catch (parseError) {
-        console.error("Failed to parse response:", parseError);
-        throw new Error("Invalid server response");
+        console.error("❌ Failed to parse response:", parseError);
+        throw new Error(`Invalid server response: ${textResponse}`);
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to set reminder");
       }
 
       if (data.success) {
@@ -213,13 +218,13 @@ export default function HomePage() {
           day: "",
           reminder: "7",
         });
-        toast.success("Reminder set successfully!");
+        toast.success("Reminder set successfully! Check your email for confirmation.");
       } else {
-        console.error("Server returned error:", data);
+        console.error("❌ Server returned error:", data);
         toast.error(data.error || "Failed to set reminder");
       }
     } catch (error) {
-      console.error("Error submitting reminder:", error);
+      console.error("❌ Error submitting reminder:", error);
       toast.error(error instanceof Error ? error.message : "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
