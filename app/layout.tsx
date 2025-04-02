@@ -1,6 +1,9 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
 import { Dynalight } from "next/font/google";
+import { Toaster } from "sonner";
+import type { Metadata } from "next";
+import { ThemeProvider } from "./providers/ThemeProvider";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -14,9 +17,9 @@ const dynalight = Dynalight({
   variable: "--font-dynalight"
 });
 
-export const metadata = {
-  title: "Reemind",
-  description: "Private, simple birthday reminders",
+export const metadata: Metadata = {
+  title: "Reemind - Birthday Reminders",
+  description: "Never forget a birthday again",
 };
 
 export default function RootLayout({
@@ -26,10 +29,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${dynalight.variable}`}>
-      <body className="bg-[#f7f7f8]">
-        <main className="min-h-screen bg-[#f7f7f8] p-6">
-          {children}
-        </main>
+      <body className="bg-background-light dark:bg-background-dark transition-colors duration-200">
+        <ThemeProvider>
+          <main className="min-h-screen">
+            {children}
+          </main>
+        </ThemeProvider>
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );
