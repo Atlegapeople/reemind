@@ -5,7 +5,7 @@ import clientPromise from "@/lib/mongodb";
 // DELETE
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { [key: string]: string } }
 ) {
   const { id } = params;
 
@@ -32,7 +32,7 @@ export async function DELETE(
 // PUT
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { [key: string]: string } }
 ) {
   const { id } = params;
 
