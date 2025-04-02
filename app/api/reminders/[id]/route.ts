@@ -2,10 +2,16 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
 
+type RouteParams = {
+  params: {
+    id: string;
+  };
+};
+
 // DELETE
 export async function DELETE(
   request: Request,
-  { params }: { params: { [key: string]: string } }
+  { params }: RouteParams
 ) {
   const { id } = params;
 
@@ -32,7 +38,7 @@ export async function DELETE(
 // PUT
 export async function PUT(
   request: Request,
-  { params }: { params: { [key: string]: string } }
+  { params }: RouteParams
 ) {
   const { id } = params;
 
