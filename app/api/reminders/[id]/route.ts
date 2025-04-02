@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import clientPromise from "@/lib/mongodb";
+import clientPromise from "@/lib/db";
 
 export async function DELETE(
   request: NextRequest,
@@ -56,6 +56,35 @@ export async function PUT(
     });
   } catch (err) {
     console.error("🔥 Error updating reminder:", err);
+    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+  }
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  if (!ObjectId.isValid(id)) {
+    return NextResponse.json({ success: false, error: "Invalid ID" }, { status: 400 });
+  }
+
+  try {
+    const client = await clientPromise;
+    const db = client.db("reemind");
+
+    const reminder = await db.collection("reminders").findOne({ 
+      _id: new ObjectId(id) 
+    });
+
+    if (!reminder) {
+      return NextResponse.json({ success: false, error: "Reminder not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, reminder });
+  } catch (err) {
+    console.error("🔥 Error fetching reminder:", err);
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
   }
 } 
