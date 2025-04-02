@@ -2,16 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import clientPromise from "@/lib/mongodb";
 
-type Props = {
-  params: { id: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-};
-
 export async function DELETE(
   request: NextRequest,
-  props: Props
+  context: { params: { id: string } }
 ) {
-  const { id } = props.params;
+  const { id } = context.params;
 
   if (!ObjectId.isValid(id)) {
     return NextResponse.json({ success: false, error: "Invalid ID" }, { status: 400 });
@@ -35,9 +30,9 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  props: Props
+  context: { params: { id: string } }
 ) {
-  const { id } = props.params;
+  const { id } = context.params;
 
   if (!ObjectId.isValid(id)) {
     return NextResponse.json({ success: false, error: "Invalid ID" }, { status: 400 });
