@@ -126,6 +126,7 @@ export default function HomePage() {
   const [isManageLoading, setIsManageLoading] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [isMounted, setIsMounted] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     setIsMounted(true);
@@ -174,13 +175,35 @@ export default function HomePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
+
     try {
+      // Log the data being sent
+      console.log("Sending data:", formData);
+
       const res = await fetch("/api/reminders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify(formData),
       });
-      const data = await res.json();
+
+      // Log the response status
+      console.log("Response status:", res.status);
+
+      // Try to parse the response as JSON
+      let data;
+      try {
+        const textResponse = await res.text();
+        console.log("Raw response:", textResponse);
+        data = JSON.parse(textResponse);
+      } catch (parseError) {
+        console.error("Failed to parse response:", parseError);
+        throw new Error("Invalid server response");
+      }
+
       if (data.success) {
         setSuccess(true);
         setFormData({
@@ -192,11 +215,12 @@ export default function HomePage() {
         });
         toast.success("Reminder set successfully!");
       } else {
+        console.error("Server returned error:", data);
         toast.error(data.error || "Failed to set reminder");
       }
     } catch (error) {
       console.error("Error submitting reminder:", error);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
