@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LucideCheckCircle2, LucideXCircle, LucideRefreshCw, LucideMoon, LucideSun } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "../providers/ThemeProvider";
 
-export default function VerifyPage() {
+function VerifyPageContent() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -269,5 +269,13 @@ export default function VerifyPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyPageContent />
+    </Suspense>
   );
 }
