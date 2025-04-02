@@ -4,9 +4,9 @@ import clientPromise from "@/lib/mongodb";
 
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = context.params;
+  const { id } = params;
 
   if (!ObjectId.isValid(id)) {
     return NextResponse.json({ success: false, error: "Invalid ID" }, { status: 400 });
@@ -30,9 +30,9 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = context.params;
+  const { id } = params;
 
   if (!ObjectId.isValid(id)) {
     return NextResponse.json({ success: false, error: "Invalid ID" }, { status: 400 });
