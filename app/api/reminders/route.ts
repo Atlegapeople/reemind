@@ -1,89 +1,100 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/db";
 import nodemailer from "nodemailer";
+import { connectToDatabase } from "@/lib/mongodb";
+import { sendReminderEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
-    // Parse and validate the request body
-    let body;
-    try {
-      body = await request.json();
-      console.log("📥 Received data:", body);
-    } catch (parseError) {
-      console.error("❌ Failed to parse request body:", parseError);
-      return NextResponse.json({
-        success: false,
-        error: "Invalid request format"
-      }, { status: 400 });
-    }
+    const body = await request.json();
+    console.log("Received request body:", body);
 
     // Validate required fields
     const { name, email, month, day, reminder } = body;
     if (!name || !email || !month || !day || !reminder) {
-      console.error("❌ Missing required fields:", { name, email, month, day, reminder });
-      return NextResponse.json({
-        success: false,
-        error: "Missing required fields",
-        received: { name, email, month, day, reminder }
-      }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
     // Convert and validate data types
-    const reminderData = {
-      name: String(name),
-      email: String(email).toLowerCase(),
-      month: parseInt(month),
-      day: parseInt(day),
-      reminder: parseInt(reminder),
-      createdAt: new Date()
-    };
+    const monthNum = parseInt(month, 10);
+    const dayNum = parseInt(day, 10);
+    const reminderNum = parseInt(reminder, 10);
 
-    // Validate numeric values
-    if (isNaN(reminderData.month) || reminderData.month < 1 || reminderData.month > 12) {
-      return NextResponse.json({
-        success: false,
-        error: "Invalid month value"
-      }, { status: 400 });
+    if (
+      isNaN(monthNum) ||
+      isNaN(dayNum) ||
+      isNaN(reminderNum) ||
+      monthNum < 1 ||
+      monthNum > 12 ||
+      dayNum < 1 ||
+      dayNum > 31 ||
+      reminderNum < 1 ||
+      reminderNum > 30
+    ) {
+      console.error("Validation failed:", {
+        month: monthNum,
+        day: dayNum,
+        reminder: reminderNum,
+        original: { month, day, reminder }
+      });
+      return NextResponse.json(
+        { error: "Invalid data format. Please check your inputs." },
+        { status: 400 }
+      );
     }
 
-    if (isNaN(reminderData.day) || reminderData.day < 1 || reminderData.day > 31) {
-      return NextResponse.json({
-        success: false,
-        error: "Invalid day value"
-      }, { status: 400 });
-    }
-
-    if (isNaN(reminderData.reminder) || reminderData.reminder < 1) {
-      return NextResponse.json({
-        success: false,
-        error: "Invalid reminder value"
-      }, { status: 400 });
-    }
-
-    // Connect to MongoDB
-    console.log("🔄 Connecting to database...");
     const client = await clientPromise;
     const db = client.db("reemind");
+    console.log("Connected to database");
 
-    // Insert the reminder
-    console.log("📝 Inserting reminder:", reminderData);
-    const result = await db.collection("reminders").insertOne(reminderData);
-    console.log("✅ Reminder inserted successfully:", result.insertedId);
-
-    return NextResponse.json({
-      success: true,
-      reminder: {
-        _id: result.insertedId,
-        ...reminderData
-      }
+    const result = await db.collection("reminders").insertOne({
+      name,
+      email,
+      month: monthNum,
+      day: dayNum,
+      reminder: reminderNum,
+      createdAt: new Date(),
     });
+
+    console.log("Inserted reminder:", result.insertedId);
+
+    // Send confirmation email
+    const emailResult = await sendReminderEmail({
+      to: email,
+      name,
+      reminder: `Reminder ${reminderNum}`,
+      month: monthNum,
+      day: dayNum,
+    });
+
+    if (!emailResult.success) {
+      console.error("Failed to send email:", emailResult.error);
+      // Don't fail the request if email fails
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        id: result.insertedId,
+        reminder: {
+          name,
+          email,
+          month: monthNum,
+          day: dayNum,
+          reminder: reminderNum,
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error("🔥 Server error:", error);
-    return NextResponse.json({
-      success: false,
-      error: "Server error",
-      details: process.env.NODE_ENV === 'development' ? String(error) : undefined
-    }, { status: 500 });
+    console.error("Error in POST /api/reminders:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 
