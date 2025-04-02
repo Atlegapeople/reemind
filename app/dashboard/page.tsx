@@ -3,12 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/ui/data-table";
-import { columns } from "@/components/columns";
-import type { Reminder } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pencil, Trash2, LogOut, Calendar, Download } from "lucide-react";
+import { Pencil, Trash2, LogOut, Calendar, Download, Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -27,6 +25,7 @@ import {
 
 interface Reminder {
   _id: string;
+  id: string;
   name: string;
   month: string;
   day: string;
@@ -43,6 +42,7 @@ export default function DashboardPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reminderToDelete, setReminderToDelete] = useState<string | null>(null);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const email = Cookies.get("reemind_user") || "";
 
@@ -50,16 +50,35 @@ export default function DashboardPage() {
     if (!email) return;
     setLoading(true);
     try {
-        const res = await fetch('/api/reminders/fetch', {
+      const res = await fetch('/api/reminders/fetch', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
       if (data?.reminders) {
-        const sorted = data.reminders.sort((a: Reminder, b: Reminder) =>
-          a.name.localeCompare(b.name)
-        );
+        const sorted = data.reminders
+          .map((r: any) => ({
+            ...r,
+            id: r._id
+          }))
+          .sort((a: Reminder, b: Reminder) => {
+            const currentMonth = new Date().getMonth() + 1;
+            const monthA = parseInt(a.month);
+            const monthB = parseInt(b.month);
+            
+            // Adjust months for comparison (months that have passed this year get +12)
+            const adjustedMonthA = monthA < currentMonth ? monthA + 12 : monthA;
+            const adjustedMonthB = monthB < currentMonth ? monthB + 12 : monthB;
+            
+            // Sort by adjusted month first
+            if (adjustedMonthA !== adjustedMonthB) {
+              return adjustedMonthA - adjustedMonthB;
+            }
+            
+            // If months are the same, sort by day
+            return parseInt(a.day) - parseInt(b.day);
+          });
         setReminders(sorted);
       }
     } catch (err) {
@@ -75,12 +94,15 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     try {
+      setIsLoggingOut(true);
       await fetch("/api/auth/logout", { method: "POST" });
       Cookies.remove("reemind_user");
-      router.push("/");
       toast.success("Logged out successfully");
+      router.push("/");
     } catch (err) {
       toast.error("Failed to logout");
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -148,28 +170,59 @@ export default function DashboardPage() {
   const currentMonth = new Date().getMonth() + 1;
   const birthdaysThisMonth = reminders.filter(r => Number(r.month) === currentMonth);
 
-  const columns: ColumnDef<Reminder>[] = [
+  const getBirthdayStatus = (reminder: Reminder) => {
+    const today = new Date();
+    const currentMonth = today.getMonth() + 1; // 1-12
+    const currentDay = today.getDate();
+    const reminderMonth = parseInt(reminder.month);
+    const reminderDay = parseInt(reminder.day);
+
+    // Check if birthday is today
+    if (currentMonth === reminderMonth && currentDay === reminderDay) {
+      return 'today';
+    }
+
+    // Check if birthday is past (earlier this year)
+    if (
+      reminderMonth < currentMonth || 
+      (reminderMonth === currentMonth && reminderDay < currentDay)
+    ) {
+      return 'past';
+    }
+
+    // Otherwise it's in the future
+    return 'future';
+  };
+
+  const columns: Array<{
+    header: string;
+    accessorKey: keyof Reminder;
+    cell?: ({ row }: { row: { original: Reminder } }) => React.ReactNode;
+  }> = [
     { 
-      accessorKey: "name", 
       header: "Name",
+      accessorKey: "name",
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("name")}</div>
-      )
+        <div className="font-medium">{row.original.name}</div>
+      ),
     },
     {
-      accessorKey: "month",
       header: "Month",
+      accessorKey: "month",
       cell: ({ row }) => monthNames[Number(row.original.month) - 1] || row.original.month,
     },
-    { accessorKey: "day", header: "Day" },
     { 
-      accessorKey: "reminder", 
+      header: "Day",
+      accessorKey: "day",
+    },
+    { 
       header: "Days Before",
-      cell: ({ row }) => `${row.getValue("reminder")} days`
+      accessorKey: "reminder",
+      cell: ({ row }) => `${row.original.reminder} days`,
     },
     {
-      id: "actions",
       header: "Actions",
+      accessorKey: "_id",
       cell: ({ row }) => (
         <div className="flex space-x-2">
           <Button 
@@ -179,6 +232,7 @@ export default function DashboardPage() {
               setSelectedReminder(row.original);
               setIsModalOpen(true);
             }}
+            className="cursor-pointer"
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -186,6 +240,7 @@ export default function DashboardPage() {
             variant="ghost" 
             size="sm" 
             onClick={() => handleDeleteClick(row.original._id)}
+            className="cursor-pointer"
           >
             <Trash2 className="h-4 w-4 text-red-500" />
           </Button>
@@ -209,6 +264,7 @@ export default function DashboardPage() {
             onClick={() => {
               setSelectedReminder({ 
                 _id: "", 
+                id: "", 
                 name: "", 
                 month: "", 
                 day: "", 
@@ -216,12 +272,27 @@ export default function DashboardPage() {
               });
               setIsModalOpen(true);
             }}
-            className="bg-[#17C3B2] hover:bg-[#17C3B2]/90 text-white"
+            className="bg-[#17C3B2] hover:bg-[#17C3B2]/90 text-white cursor-pointer"
           >
             + New Reminder
           </Button>
-          <Button onClick={handleLogout} variant="outline">
-            <LogOut className="h-4 w-4 mr-2" /> Logout
+          <Button 
+            onClick={handleLogout} 
+            variant="outline" 
+            className="cursor-pointer"
+            disabled={isLoggingOut}
+          >
+            {isLoggingOut ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Logging out...
+              </>
+            ) : (
+              <>
+                <LogOut className="h-4 w-4 mr-2" /> 
+                Logout
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -249,9 +320,23 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{birthdaysThisMonth.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mb-2">
               {monthNames[currentMonth - 1]} birthdays
             </p>
+            {birthdaysThisMonth.length > 0 ? (
+              <div className="space-y-1">
+                {birthdaysThisMonth
+                  .sort((a, b) => parseInt(a.day) - parseInt(b.day))
+                  .map((birthday) => (
+                    <div key={birthday._id} className="text-sm flex items-center justify-between">
+                      <span>{birthday.name}</span>
+                      <span className="text-muted-foreground">{birthday.day} {monthNames[parseInt(birthday.month) - 1]}</span>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No birthdays this month</p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -262,6 +347,7 @@ export default function DashboardPage() {
             variant="destructive" 
             size="sm"
             onClick={handleBulkDelete}
+            className="cursor-pointer"
           >
             Delete Selected ({selectedRows.length})
           </Button>
@@ -269,6 +355,7 @@ export default function DashboardPage() {
             variant="outline" 
             size="sm"
             onClick={() => setSelectedRows([])}
+            className="cursor-pointer"
           >
             Clear Selection
           </Button>
@@ -280,19 +367,48 @@ export default function DashboardPage() {
           variant="ghost" 
           size="sm"
           onClick={exportToCSV}
+          className="cursor-pointer"
         >
           <Download className="h-4 w-4 mr-2" /> Export to CSV
         </Button>
       </div>
 
+      <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-emerald-50 border border-emerald-200 rounded"></div>
+          <span className="text-sm">Today's Birthday</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-sky-50 border border-sky-200 rounded"></div>
+          <span className="text-sm">Upcoming Birthday</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-slate-50 border border-slate-200 rounded"></div>
+          <span className="text-sm">Past Birthday</span>
+        </div>
+      </div>
+
       <div className="rounded-md border">
-      <DataTable<Reminder>
-  columns={columns}
-  data={reminders.filter(r =>
-    r.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )}
-  onRowSelectionChange={setSelectedRows}
-/>
+        <DataTable<Reminder>
+          columns={columns}
+          data={reminders.filter(r =>
+            r.name.toLowerCase().includes(searchQuery.toLowerCase())
+          )}
+          onRowSelectionChange={setSelectedRows}
+          getRowClassName={(row) => {
+            const status = getBirthdayStatus(row.original);
+            switch (status) {
+              case 'today':
+                return 'bg-emerald-50 hover:bg-emerald-100';
+              case 'past':
+                return 'bg-slate-50 hover:bg-slate-100';
+              case 'future':
+                return 'bg-sky-50 hover:bg-sky-100';
+              default:
+                return '';
+            }
+          }}
+        />
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -307,7 +423,7 @@ export default function DashboardPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 cursor-pointer"
             >
               Delete
             </AlertDialogAction>
@@ -333,17 +449,22 @@ export default function DashboardPage() {
                 const res = await fetch(url, {
                   method,
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(selectedReminder),
+                  body: JSON.stringify({
+                    ...selectedReminder,
+                    email: email
+                  }),
                 });
                 const result = await res.json();
                 if (result.success) {
                   toast.success(
                     selectedReminder._id 
-                      ? "Reminder updated" 
-                      : "Reminder created"
+                      ? `Successfully updated reminder for ${selectedReminder.name}`
+                      : `Successfully created reminder for ${selectedReminder.name}`
                   );
                   fetchReminders();
                   setIsModalOpen(false);
+                } else {
+                  toast.error(result.error || "Failed to save reminder");
                 }
               } catch (err) {
                 toast.error("Failed to save reminder");
@@ -395,7 +516,7 @@ export default function DashboardPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full mt-4">
+            <Button type="submit" className="w-full mt-4 cursor-pointer">
               {selectedReminder._id ? "Update Reminder" : "Create Reminder"}
             </Button>
           </form>
