@@ -1,16 +1,8 @@
 import { NextResponse } from "next/server";
 import { VerificationEmail } from "@/components/email/VerificationEmail";
-import nodemailer from "nodemailer";
+import { Resend } from 'resend';
 
-// Create a transporter for MailDev
-const transporter = nodemailer.createTransport({
-  host: "localhost",
-  port: 1025,
-  secure: false,
-  tls: {
-    rejectUnauthorized: false
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
   try {
@@ -22,17 +14,13 @@ export async function POST(request: Request) {
     // Create email content using the template
     const html = VerificationEmail({ code, email });
 
-    // Send email
-    await transporter.sendMail({
-      from: '"Reemind" <noreply@reemind.app>',
-      to: email,
+    // Send email using Resend
+    await resend.emails.send({
+      from: 'Reemind <onboarding@resend.dev>',
+      to: [email],
       subject: "Your Reemind verification code",
       html: html,
       text: `Your verification code is: ${code}`,
-      headers: {
-        'Content-Type': 'text/html; charset=UTF-8',
-        'MIME-Version': '1.0'
-      }
     });
 
     // Store the code in memory (in production, you'd want to use a database)

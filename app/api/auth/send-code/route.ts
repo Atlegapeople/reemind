@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import nodemailer from "nodemailer";
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -24,26 +26,15 @@ export async function POST(req: Request) {
   await db.collection("login_codes").insertOne({ email, code, expiresAt, used: false });
   console.log("✅ Code saved:", code);
 
-  // 🛠 Local MailDev SMTP config
-  const transporter = nodemailer.createTransport({
-    host: "localhost",
-    port: 1025,
-    secure: false,
-    tls: {
-      rejectUnauthorized: false
-    }
-  });
-
-  const mailOptions = {
-    from: "noreply@reemind.local",
-    to: email,
-    subject: "Your Reemind verification code",
-    text: `Your verification code is: ${code}`,
-  };
-
   try {
-    console.log("📤 Sending email using MailDev...");
-    await transporter.sendMail(mailOptions);
+    // Send email using Resend
+    await resend.emails.send({
+      from: 'Reemind <onboarding@resend.dev>',
+      to: [email],
+      subject: "Your Reemind verification code",
+      text: `Your verification code is: ${code}`,
+    });
+
     console.log("✅ Email 'sent' to:", email);
     return NextResponse.json({ success: true });
   } catch (error) {
