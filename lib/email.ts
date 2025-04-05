@@ -66,6 +66,8 @@ export async function sendReminderEmail({
               <p style="font-size: 16px; color: #666666; margin: 0;">You'll receive another reminder <span style="color: #17C3B2; font-weight: 600;">${reminderText}</span> <span style="color: #17C3B2;">before</span> the event. 🎈</p>
             </div>
             
+            <img src="/logo.png" alt="Reemind Logo" style="max-width: 100%; height: auto; margin-bottom: 24px;">
+            
             <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(34,124,157,0.2);">
               <h1 class="dynalight">Reemind.</h1>
               <p style="color: #666666; font-size: 14px; margin: 0;">Helping you remember what matters most</p>
