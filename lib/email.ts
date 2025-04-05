@@ -38,7 +38,7 @@ export async function sendReminderEmail({
     console.log("Reminder value:", { original: reminder, parsed: reminderNum, text: reminderText });
 
     const data = await resend.emails.send({
-      from: 'Reemind <onboarding@resend.dev>',
+      from: 'Reemind <support@reemind.app>',
       to: [to],
       subject: 'Your Reminder from Reemind',
       html: `

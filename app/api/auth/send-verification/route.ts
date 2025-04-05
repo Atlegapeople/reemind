@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
     // Send email using Resend
     await resend.emails.send({
-      from: 'Reemind <onboarding@resend.dev>',
+      from: 'Reemind <support@reemind.app>',
       to: [email],
       subject: "Your Reemind verification code",
       html: html,

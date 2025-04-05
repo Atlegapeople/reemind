@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   try {
     // Send email using Resend
     await resend.emails.send({
-      from: 'Reemind <onboarding@resend.dev>',
+      from: 'Reemind <support@reemind.app>',
       to: [email],
       subject: "Your Reemind verification code",
       text: `Your verification code is: ${code}`,
