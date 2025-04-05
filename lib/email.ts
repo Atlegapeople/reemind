@@ -72,6 +72,8 @@ export async function sendReminderEmail({
               <h1 class="dynalight">Reemind.</h1>
               <p style="color: #666666; font-size: 14px; margin: 0;">Helping you remember what matters most</p>
             </div>
+
+            <p style="color: #666666; font-size: 14px; margin: 0;">Best regards,<br>The Reemind Team</p>
           </div>
         </body>
         </html>
