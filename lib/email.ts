@@ -48,6 +48,12 @@ export async function sendReminderEmail({
           <meta charset="utf-8">
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Dynalight&display=swap');
+            .dynalight {
+              font-family: 'Dynalight', cursive;
+              font-size: 7rem;
+              color: #227C9D;
+              line-height: 1;
+            }
           </style>
         </head>
         <body style="margin: 0; padding: 0; background-color: #FFFFFF;">
@@ -61,8 +67,7 @@ export async function sendReminderEmail({
             </div>
             
             <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(34,124,157,0.2);">
-              <p style="color: #666666; margin: 0;">Best regards,</p>
-              <h1 style="color: #227C9D; font-family: 'Dynalight', cursive; font-size: 112px; line-height: 0.9; margin: 16px 0 4px 0;">Reemind.</h1>
+              <h1 class="dynalight">Reemind.</h1>
               <p style="color: #666666; font-size: 14px; margin: 0;">Helping you remember what matters most</p>
             </div>
           </div>
